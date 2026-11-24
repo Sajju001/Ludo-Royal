@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Email-OTP verified player profile, virtual currency balance, daily claim date, and match statistics.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "avatarId": {
+          "type": "string",
+          "enum": ["king", "archer", "empress", "knight"]
+        },
+        "coins": {
+          "type": "integer"
+        },
+        "gems": {
+          "type": "integer"
+        },
+        "wins": {
+          "type": "integer"
+        },
+        "gamesPlayed": {
+          "type": "integer"
+        },
+        "lastDailyClaimDate": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "avatarId",
+        "coins",
+        "gems",
+        "wins",
+        "gamesPlayed",
+        "lastDailyClaimDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GameRoom": {
+      "title": "GameRoom",
+      "description": "Real-time multiplayer Ludo room synchronized via Firestore.",
+      "type": "object",
+      "properties": {
+        "roomCode": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 6,
+          "pattern": "^[A-Z0-9]{6}$"
+        },
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "isPublic": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "playing", "finished"]
+        },
+        "maxPlayers": {
+          "type": "integer"
+        },
+        "stake": {
+          "type": "integer"
+        },
+        "threeSixesRule": {
+          "type": "boolean"
+        },
+        "playerUids": {
+          "type": "array"
+        },
+        "slots": {
+          "type": "array"
+        },
+        "gameState": {
+          "type": "object"
+        },
+        "winnerUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "roomCode",
+        "hostId",
+        "isPublic",
+        "status",
+        "maxPlayers",
+        "stake",
+        "threeSixesRule",
+        "playerUids",
+        "slots",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Player profile and virtual currency stats (zero PII stored)."
+    },
+    "/rooms/{roomCode}": {
+      "schema": {
+        "$ref": "#/entities/GameRoom"
+      },
+      "description": "Real-time multiplayer Ludo room state."
+    }
+  }
+}

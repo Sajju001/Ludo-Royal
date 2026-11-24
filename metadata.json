@@ -1,0 +1,8 @@
+{
+  "name": "Ludo Royale",
+  "description": "A royal purple & gold Ludo board game featuring classic rules, smart AI opponents, local pass-and-play, and real-time room-code multiplayer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

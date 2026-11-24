@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Poppins", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --color-royal-deep: #160B33;
+  --color-royal-mid: #281359;
+  --color-royal-purple: #5A2DAB;
+  --color-royal-gold: #FFBC41;
+  --color-royal-crimson: #FF201B;
+  --color-royal-blue: #4396FC;
+  --color-royal-magenta: #F300CC;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: #160b33;
+    color: #ffffff;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+  }
+}
+
+.royal-bg-radial {
+  background: radial-gradient(circle at 50% 18%, #5a2dab 0%, #2a125c 45%, #14082e 100%);
+}
+
+.royal-gold-gradient {
+  background: linear-gradient(180deg, #ffe07d 0%, #ffbc41 55%, #d9820b 100%);
+}
+
+.royal-crimson-gradient {
+  background: linear-gradient(180deg, #ff514d 0%, #ff201b 55%, #b90b08 100%);
+}
+
+.royal-blue-gradient {
+  background: linear-gradient(180deg, #6ab2ff 0%, #4396fc 55%, #1d5ec4 100%);
+}
+
+.royal-emerald-gradient {
+  background: linear-gradient(180deg, #4ade80 0%, #16a34a 55%, #15803d 100%);
+}
+
+.royal-magenta-gradient {
+  background: linear-gradient(180deg, #ff4de0 0%, #f300cc 55%, #9d0084 100%);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
