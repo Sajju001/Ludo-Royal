@@ -1,0 +1,256 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Email-OTP verified player profile, virtual currency balance, daily claim date, and match statistics.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "avatarId": {
+          "type": "string",
+          "enum": ["king", "archer", "empress", "knight"]
+        },
+        "coins": {
+          "type": "integer"
+        },
+        "gems": {
+          "type": "integer"
+        },
+        "wins": {
+          "type": "integer"
+        },
+        "gamesPlayed": {
+          "type": "integer"
+        },
+        "lastDailyClaimDate": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "avatarId",
+        "coins",
+        "gems",
+        "wins",
+        "gamesPlayed",
+        "lastDailyClaimDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GameRoom": {
+      "title": "GameRoom",
+      "description": "Real-time multiplayer Ludo room synchronized via Firestore.",
+      "type": "object",
+      "properties": {
+        "roomCode": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 6,
+          "pattern": "^[A-Z0-9]{6}$"
+        },
+        "hostId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "isPublic": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "playing", "finished"]
+        },
+        "maxPlayers": {
+          "type": "integer"
+        },
+        "stake": {
+          "type": "integer"
+        },
+        "threeSixesRule": {
+          "type": "boolean"
+        },
+        "playerUids": {
+          "type": "array"
+        },
+        "slots": {
+          "type": "array"
+        },
+        "gameState": {
+          "type": "object"
+        },
+        "winnerUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "roomCode",
+        "hostId",
+        "isPublic",
+        "status",
+        "maxPlayers",
+        "stake",
+        "threeSixesRule",
+        "playerUids",
+        "slots",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AuthCredential": {
+      "title": "AuthCredential",
+      "description": "Salted scrypt password hash and server-signed HMAC credential integrity proof (zero email PII).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "passwordHash": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 256
+        },
+        "authProof": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "passwordHash", "authProof", "createdAt", "updatedAt"]
+    },
+    "VoiceSignal": {
+      "title": "VoiceSignal",
+      "description": "WebRTC SDP/ICE signaling packet scoped to an active room.",
+      "type": "object",
+      "properties": {
+        "roomCode": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 6
+        },
+        "fromUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "toUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "enum": ["offer", "answer", "ice"]
+        },
+        "payload": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 16384
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["roomCode", "fromUid", "toUid", "type", "payload", "createdAt"]
+    },
+    "VoicePeer": {
+      "title": "VoicePeer",
+      "description": "Live microphone presence state for a player inside an active voice room.",
+      "type": "object",
+      "properties": {
+        "roomCode": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 6
+        },
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "micEnabled": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["roomCode", "uid", "micEnabled", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Player profile and virtual currency stats (zero PII stored)."
+    },
+    "/authCredentials/{userId}": {
+      "schema": {
+        "$ref": "#/entities/AuthCredential"
+      },
+      "description": "Salted password hashes with HMAC integrity tags (directory listing disabled)."
+    },
+    "/rooms/{roomCode}": {
+      "schema": {
+        "$ref": "#/entities/GameRoom"
+      },
+      "description": "Real-time multiplayer Ludo room state."
+    },
+    "/rooms/{roomCode}/voiceSignals/{signalId}": {
+      "schema": {
+        "$ref": "#/entities/VoiceSignal"
+      },
+      "description": "Ephemeral WebRTC SDP offer/answer and ICE candidates for room voice chat."
+    },
+    "/rooms/{roomCode}/voicePeers/{peerUid}": {
+      "schema": {
+        "$ref": "#/entities/VoicePeer"
+      },
+      "description": "Live mic on/off state for players in the room."
+    }
+  }
+}

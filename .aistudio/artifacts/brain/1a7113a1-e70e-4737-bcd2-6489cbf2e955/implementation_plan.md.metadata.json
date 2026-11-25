@@ -1,0 +1,6 @@
+{
+  "summary": "Architectural implementation plan for Ludo Royale upgrade: zero-spinner instant UX, synchronized 3D dice rolling across peers, Name+Email+Password signup with 1st-time OTP & Forgot Password OTP reset, bottom-left player-perspective board rotation, and WebRTC live voice chat with one-tap Mic On/Off.",
+  "updatedAt": "2026-11-25T06:16:32.279468136Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

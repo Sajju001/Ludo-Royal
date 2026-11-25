@@ -1,0 +1,260 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidRoomCode(code) {
+      return code is string && code.size() == 6 && code.matches('^[A-Z0-9]{6}$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'avatarId', 'coins', 'gems', 'wins', 'gamesPlayed', 'lastDailyClaimDate', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'avatarId', 'coins', 'gems', 'wins', 'gamesPlayed', 'lastDailyClaimDate', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 32
+        && data.avatarId in ['king', 'archer', 'empress', 'knight']
+        && data.coins is int && data.coins >= 0 && data.coins <= 10000000
+        && data.gems is int && data.gems >= 0 && data.gems <= 1000000
+        && data.wins is int && data.wins >= 0 && data.wins <= 1000000
+        && data.gamesPlayed is int && data.gamesPlayed >= 0 && data.gamesPlayed <= 1000000
+        && data.lastDailyClaimDate is string && data.lastDailyClaimDate.size() <= 32
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRoom(data) {
+      return data.keys().hasAll([
+          'roomCode', 'hostId', 'isPublic', 'status', 'maxPlayers', 'stake',
+          'threeSixesRule', 'playerUids', 'slots', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'roomCode', 'hostId', 'isPublic', 'status', 'maxPlayers', 'stake',
+          'threeSixesRule', 'playerUids', 'slots', 'gameState', 'winnerUid',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidRoomCode(data.roomCode)
+        && isValidId(data.hostId)
+        && data.isPublic is bool
+        && data.status in ['waiting', 'playing', 'finished']
+        && data.maxPlayers is int && data.maxPlayers >= 2 && data.maxPlayers <= 4
+        && data.stake is int && data.stake >= 0 && data.stake <= 50000
+        && data.threeSixesRule is bool
+        && data.playerUids is list
+        && data.playerUids.size() >= 1
+        && data.playerUids.size() <= 4
+        && data.playerUids[0] is string
+        && data.playerUids[0].size() <= 128
+        && data.slots is list
+        && data.slots.size() >= 1
+        && data.slots.size() <= 4
+        && data.slots[0] is map
+        && (!('gameState' in data) || (data.gameState is map && data.gameState.keys().size() <= 24))
+        && (!('winnerUid' in data) || (data.winnerUid is string && data.winnerUid.size() <= 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAuthCredential(data) {
+      return data.keys().hasAll(['uid', 'passwordHash', 'authProof', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'passwordHash', 'authProof', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.passwordHash is string && data.passwordHash.size() >= 20 && data.passwordHash.size() <= 256
+        && data.authProof is string && data.authProof.size() >= 20 && data.authProof.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidVoiceSignal(data, roomCode) {
+      return data.keys().hasAll(['roomCode', 'fromUid', 'toUid', 'type', 'payload', 'createdAt'])
+        && data.keys().hasOnly(['roomCode', 'fromUid', 'toUid', 'type', 'payload', 'createdAt'])
+        && data.roomCode == roomCode
+        && isValidId(data.fromUid)
+        && isValidId(data.toUid)
+        && data.fromUid != data.toUid
+        && data.type in ['offer', 'answer', 'ice']
+        && data.payload is string && data.payload.size() >= 2 && data.payload.size() <= 16384
+        && data.createdAt is timestamp;
+    }
+
+    function isValidVoicePeer(data, roomCode, peerUid) {
+      return data.keys().hasAll(['roomCode', 'uid', 'micEnabled', 'updatedAt'])
+        && data.keys().hasOnly(['roomCode', 'uid', 'micEnabled', 'updatedAt'])
+        && data.roomCode == roomCode
+        && data.uid == peerUid
+        && data.micEnabled is bool
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'avatarId', 'coins', 'gems', 'wins', 'gamesPlayed', 'lastDailyClaimDate', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /authCredentials/{userId} {
+      allow get: if isValidId(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isValidAuthCredential(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidAuthCredential(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'passwordHash', 'authProof', 'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /rooms/{roomCode} {
+      allow get: if isValidRoomCode(roomCode);
+
+      allow list: if existing().isPublic == true && existing().status == 'waiting';
+
+      allow create: if isValidRoomCode(roomCode)
+        && isValidRoom(incoming())
+        && incoming().roomCode == roomCode
+        && incoming().status == 'waiting'
+        && incoming().playerUids.size() == 1
+        && incoming().playerUids[0] == incoming().hostId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidRoomCode(roomCode)
+        && isValidRoom(incoming())
+        && existing().status != 'finished'
+        && incoming().roomCode == existing().roomCode
+        && incoming().hostId == existing().hostId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (
+            existing().status == 'waiting'
+            && existing().playerUids.size() < existing().maxPlayers
+            && incoming().playerUids.hasAll(existing().playerUids)
+            && incoming().playerUids.size() == existing().playerUids.size() + 1
+            && (
+              (
+                incoming().status == 'waiting'
+                && incoming().diff(existing()).affectedKeys().hasOnly(['playerUids', 'slots', 'updatedAt'])
+              )
+              ||
+              (
+                existing().isPublic == true
+                && incoming().playerUids.size() == existing().maxPlayers
+                && incoming().status == 'playing'
+                && incoming().diff(existing()).affectedKeys().hasOnly(['playerUids', 'slots', 'status', 'gameState', 'updatedAt'])
+              )
+            )
+          )
+          ||
+          (
+            existing().status == 'waiting'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['playerUids', 'slots', 'status', 'gameState', 'updatedAt'])
+            && (
+              incoming().status == 'waiting'
+              || (incoming().status == 'playing' && incoming().playerUids.size() >= 2)
+            )
+          )
+          ||
+          (
+            existing().status == 'playing'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['gameState', 'status', 'winnerUid', 'updatedAt'])
+            && (incoming().status == 'playing' || incoming().status == 'finished')
+          )
+        );
+
+      allow delete: if isValidRoomCode(roomCode)
+        && existing().status == 'waiting';
+
+      match /voiceSignals/{signalId} {
+        allow get: if isValidRoomCode(roomCode)
+          && isValidId(signalId)
+          && get(/databases/$(database)/documents/rooms/$(roomCode)).data.status == 'playing';
+
+        allow list: if isValidRoomCode(roomCode)
+          && existing().roomCode == roomCode;
+
+        allow create: if isValidRoomCode(roomCode)
+          && isValidId(signalId)
+          && isValidVoiceSignal(incoming(), roomCode)
+          && get(/databases/$(database)/documents/rooms/$(roomCode)).data.status == 'playing'
+          && incoming().fromUid in get(/databases/$(database)/documents/rooms/$(roomCode)).data.playerUids
+          && incoming().toUid in get(/databases/$(database)/documents/rooms/$(roomCode)).data.playerUids
+          && incoming().createdAt == request.time;
+
+        allow update: if false;
+
+        allow delete: if isValidRoomCode(roomCode)
+          && isValidId(signalId)
+          && get(/databases/$(database)/documents/rooms/$(roomCode)).data.status in ['playing', 'finished'];
+      }
+
+      match /voicePeers/{peerUid} {
+        allow get: if isValidRoomCode(roomCode)
+          && isValidId(peerUid)
+          && get(/databases/$(database)/documents/rooms/$(roomCode)).data.status == 'playing';
+
+        allow list: if isValidRoomCode(roomCode)
+          && existing().roomCode == roomCode;
+
+        allow create: if isValidRoomCode(roomCode)
+          && isValidId(peerUid)
+          && isValidVoicePeer(incoming(), roomCode, peerUid)
+          && get(/databases/$(database)/documents/rooms/$(roomCode)).data.status == 'playing'
+          && peerUid in get(/databases/$(database)/documents/rooms/$(roomCode)).data.playerUids
+          && incoming().updatedAt == request.time;
+
+        allow update: if isValidRoomCode(roomCode)
+          && isValidId(peerUid)
+          && isValidVoicePeer(incoming(), roomCode, peerUid)
+          && get(/databases/$(database)/documents/rooms/$(roomCode)).data.status == 'playing'
+          && peerUid in get(/databases/$(database)/documents/rooms/$(roomCode)).data.playerUids
+          && incoming().roomCode == existing().roomCode
+          && incoming().uid == existing().uid
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['micEnabled', 'updatedAt']);
+
+        allow delete: if isValidRoomCode(roomCode)
+          && isValidId(peerUid)
+          && get(/databases/$(database)/documents/rooms/$(roomCode)).data.status in ['playing', 'finished'];
+      }
+    }
+  }
+}
